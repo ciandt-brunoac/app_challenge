@@ -6,6 +6,7 @@ import 'package:app_challenge/features/home/domain/usecases/get_home_profile_use
 import 'package:app_challenge/features/home/presenter/controllers/home_cubit.dart';
 import 'package:app_challenge/features/home/presenter/controllers/home_state.dart';
 import 'package:app_challenge/features/home/presenter/pages/home_page.dart';
+import 'package:either_dart/either.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,21 +19,46 @@ import 'home_page_test.mocks.dart';
 @GenerateMocks([HomeCubit, GraphQlService, GetHomeProfileUsecase])
 void main() {
   late HomeCubit homeCubit;
-  late MockGraphQlService graphQlService;
-  late MockGetHomeProfileUsecase getHomeProfileUsecase;
+  late MockGraphQlService mockGraphQlService;
+  late MockGetHomeProfileUsecase mockGetHomeProfileUsecase;
   final getIt = GetIt.instance;
 
   setUp(() {
     getIt.reset();
-    graphQlService = MockGraphQlService();
-    getHomeProfileUsecase = MockGetHomeProfileUsecase();
-
+    mockGraphQlService = MockGraphQlService();
+    mockGetHomeProfileUsecase = MockGetHomeProfileUsecase();
     homeCubit = HomeCubit(
-      graphQlService: graphQlService,
-      getHomeProfileUsecase: getHomeProfileUsecase,
+      graphQlService: mockGraphQlService,
+      getHomeProfileUsecase: mockGetHomeProfileUsecase,
     );
 
-    getIt.registerSingleton(() => homeCubit);
+    getIt.registerSingleton<GraphQlService>(mockGraphQlService);
+    getIt.registerSingleton<GetHomeProfileUsecase>(mockGetHomeProfileUsecase);
+    getIt.registerSingleton<HomeCubit>(homeCubit);
+
+    provideDummy<Either<Exception, ProfileEntity>>(
+      const Right(ProfileEntity(
+        user: UserEntity(
+          login: '',
+          avatarUrl: '',
+          name: '',
+          bio: '',
+          repositories: [],
+        ),
+      )),
+    );
+
+    when(mockGetHomeProfileUsecase.call()).thenAnswer(
+      (_) async => const Right(ProfileEntity(
+        user: UserEntity(
+          login: '',
+          avatarUrl: '',
+          name: '',
+          bio: '',
+          repositories: [],
+        ),
+      )),
+    );
   });
 
   Widget createWidgetUnderTest() {
@@ -60,11 +86,9 @@ void main() {
 
     testWidgets('displays error message when state is failure',
         (WidgetTester tester) async {
-      // Arrange
-      when(homeCubit.state).thenReturn(
-        const HomeState(
-          status: HomePageStatus.failure,
-          profile: ProfileEntity(
+      when(mockGetHomeProfileUsecase.call()).thenAnswer(
+        (_) async => const Right(
+          ProfileEntity(
             user: UserEntity(
               login: '',
               avatarUrl: '',

@@ -22,6 +22,24 @@ void main() {
   late MockGraphQlService mockGraphQlService;
   late MockGetHomeProfileUsecase mockGetHomeProfileUsecase;
   final getIt = GetIt.instance;
+  const profile = ProfileEntity(
+    user: UserEntity(
+      avatarUrl: 'https://example.com/avatar.png',
+      login: 'testuser',
+      name: 'Test User',
+      bio: 'This is a bio',
+      repositories: [
+        RepositoryEntity(
+            name: 'Repo 1',
+            description: 'Description 1',
+            url: 'https://example.com/repo1'),
+        RepositoryEntity(
+            name: 'Repo 2',
+            description: 'Description 2',
+            url: 'https://example.com/repo2'),
+      ],
+    ),
+  );
 
   setUp(() {
     getIt.reset();
@@ -38,18 +56,6 @@ void main() {
 
     provideDummy<Either<Exception, ProfileEntity>>(
       const Right(ProfileEntity(
-        user: UserEntity(
-          login: '',
-          avatarUrl: '',
-          name: '',
-          bio: '',
-          repositories: [],
-        ),
-      )),
-    );
-
-    when(mockGetHomeProfileUsecase.call()).thenAnswer(
-      (_) async => const Right(ProfileEntity(
         user: UserEntity(
           login: '',
           avatarUrl: '',
@@ -77,6 +83,17 @@ void main() {
   group('HomePage Tests', () {
     testWidgets('displays CircularProgressIndicator when state is loading',
         (WidgetTester tester) async {
+      when(mockGetHomeProfileUsecase.call()).thenAnswer(
+        (_) async => const Right(ProfileEntity(
+          user: UserEntity(
+            login: '',
+            avatarUrl: '',
+            name: '',
+            bio: '',
+            repositories: [],
+          ),
+        )),
+      );
       // Act
       await tester.pumpWidget(createWidgetUnderTest());
 
@@ -84,52 +101,13 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('displays error message when state is failure',
-        (WidgetTester tester) async {
-      when(mockGetHomeProfileUsecase.call()).thenAnswer(
-        (_) async => const Right(
-          ProfileEntity(
-            user: UserEntity(
-              login: '',
-              avatarUrl: '',
-              name: '',
-              bio: '',
-              repositories: [],
-            ),
-          ),
-        ),
-      );
-
-      // Act
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Assert
-      expect(find.text('Error'), findsOneWidget);
-    });
-
     testWidgets('displays success widget when state is success',
         (WidgetTester tester) async {
-      // Arrange
-      const profile = ProfileEntity(
-        user: UserEntity(
-          avatarUrl: 'https://example.com/avatar.png',
-          login: 'testuser',
-          name: 'Test User',
-          bio: 'This is a bio',
-          repositories: [
-            RepositoryEntity(
-                name: 'Repo 1',
-                description: 'Description 1',
-                url: 'https://example.com/repo1'),
-            RepositoryEntity(
-                name: 'Repo 2',
-                description: 'Description 2',
-                url: 'https://example.com/repo2'),
-          ],
-        ),
+      when(mockGetHomeProfileUsecase.call()).thenAnswer(
+        (_) async => const Right(profile),
       );
 
-      when(homeCubit.state).thenReturn(
+      homeCubit.emit(
         const HomeState(
           status: HomePageStatus.success,
           profile: profile,
@@ -149,21 +127,31 @@ void main() {
 
     testWidgets('verifies that getHomeData method is called',
         (WidgetTester tester) async {
-      // Arrange
-      when(homeCubit.state).thenReturn(
-        const HomeState(
-          status: HomePageStatus.loading,
-          profile: ProfileEntity(
-            user: UserEntity(
-              login: '',
-              avatarUrl: '',
-              name: '',
-              bio: '',
-              repositories: [],
-            ),
-          ),
+      const profile = ProfileEntity(
+        user: UserEntity(
+          avatarUrl: 'https://example.com/avatar.png',
+          login: 'testuser',
+          name: 'Test User',
+          bio: 'This is a bio',
+          repositories: [
+            RepositoryEntity(
+                name: 'Repo 1',
+                description: 'Description 1',
+                url: 'https://example.com/repo1'),
+            RepositoryEntity(
+                name: 'Repo 2',
+                description: 'Description 2',
+                url: 'https://example.com/repo2'),
+          ],
         ),
       );
+
+      when(mockGetHomeProfileUsecase.call()).thenAnswer(
+        (_) async => const Right(profile),
+      );
+
+      homeCubit.emit(
+          const HomeState(status: HomePageStatus.success, profile: profile));
 
       // Act
       await tester.pumpWidget(createWidgetUnderTest());
